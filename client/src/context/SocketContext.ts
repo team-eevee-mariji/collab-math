@@ -7,6 +7,8 @@ export type SocketContextValue = {
   isConnected: boolean;
   send: (msg: MessageToBackend) => void;
   subscribe: (handler: SocketEventHandler) => () => void;
+  connect: () => void;
+  disconnect: () => void;
 };
 
 export const SocketContext = createContext<SocketContextValue | null>(null);

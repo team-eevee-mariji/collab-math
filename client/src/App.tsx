@@ -16,7 +16,10 @@ const {
   setCurrentView,
   userName,
   setUserName,
+  level,
   setRoomId,
+  lastRoomId,
+  setLastRoomId,
   setMySlot,
   setLevel,
   setMe,
@@ -27,7 +30,7 @@ const {
   setHelpRequestedSlot,
   setGameOver,
 } = useGame();
-  const { isConnected, send, subscribe } = useSocket();
+  const { isConnected, connect, send, subscribe } = useSocket();
   console.log('Socket connected:', isConnected);
   
 useEffect(() => {
@@ -43,6 +46,7 @@ useEffect(() => {
         const payload = event.payload as GameStartPayload;
 
         setRoomId(payload.roomId);
+        setLastRoomId(payload.roomId);
         setMySlot(payload.me.slot);
 
         // ADD:
@@ -96,6 +100,14 @@ useEffect(() => {
         break;
       }
 
+      case "PLAYER_LEFT": {
+        setCurrentView("WAITING");
+        setFeedback(null);
+        setIsHelpActive(false);
+        setHelpRequestedSlot(null);
+        break;
+      }
+
       case "GAME_OVER": {
         setGameOver(event.payload);
         setFeedback(null);
@@ -121,15 +133,15 @@ useEffect(() => {
   setIsHelpActive,
   setHelpRequestedSlot,
   setGameOver,
+  setLastRoomId,
   subscribe,
 ]);
 
 
   const handleLandingSubmit = ({ name }: { name: string; mode: LandingMode }) => {
     setUserName(name);
-    console.log('userName', userName);
+    connect();
     send({ command: "FIND_MATCH", payload: { name } });
-    console.log('sent user name with FIND_MATCH command');
   };
 
   const handleBackToLanding = () => {
@@ -137,7 +149,13 @@ useEffect(() => {
   };
 
   if (currentView === "LANDING") {
-    return <LandingPage onSubmit={handleLandingSubmit} initialName={userName} />;
+    return (
+      <LandingPage
+        onSubmit={handleLandingSubmit}
+        initialName={userName}
+        canJoinExisting={Boolean(lastRoomId)}
+      />
+    );
   }
 
   if (currentView === "WAITING") {
@@ -151,7 +169,7 @@ useEffect(() => {
     );
   }
 
-  return <GameView />;
+  return <GameView key={level} />;
 }
 
 export default function App() {

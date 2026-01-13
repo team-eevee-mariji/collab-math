@@ -27,6 +27,7 @@ export type GameOver = {
 
 export type GameState = {
   roomId: string | null;
+  lastRoomId: string | null;
   level: number;
   me: Player | null;
   partner: Player | null;
@@ -40,6 +41,7 @@ export type GameState = {
 
 export const initialGameState: GameState = {
   roomId: null,
+  lastRoomId: null,
   level: 1,
   me: null,
   partner: null,
@@ -62,6 +64,9 @@ export type GameContextValue = {
   // core room info
   roomId: string | null;
   setRoomId: (id: string | null) => void;
+
+  lastRoomId: string | null;
+  setLastRoomId: (id: string | null) => void;
 
   mySlot: PlayerSlot | null;
   setMySlot: (slot: PlayerSlot | null) => void;

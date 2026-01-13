@@ -1,4 +1,4 @@
-# IPC Protocol: Frontend ↔ Backend (Math Collab Game v2 - Optimized)
+# IPC Protocol: Frontend <-> Backend (Math Collab Game v2 - Optimized)
 
 **Core:** Async Message Passing over Socket.io. Server is source of truth.
 
@@ -49,31 +49,33 @@ Direction: UI triggers Backend logic.
 
 ---
 
-| Key             | Payload              | Description                                                            |
-| :-------------- | :------------------- | :--------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `FIND_MATCH`    | `{ name: string }`   | `Enters queue; Backend automatically assigns to existing or new room.` |                                                               |
-| `SUBMIT_ANSWER` | `{ slot: 'p1'}`      | `'p2', val: number }`                                                  | `Sends guess to server for validation against hidden answer.` |
-| `REQUEST_HELP`  | `{ roomId: string }` | `Triggers help-needed notification to partner.`                        |                                                               |
-| `ACCEPT_HELP`   | `{ roomId: string }` | `Partner agrees; enables cross-input typing for both players.`         |                                                               |
+| Key             | Payload                                               | Description                                                            |
+| :-------------- | :---------------------------------------------------- | :--------------------------------------------------------------------- |
+| `FIND_MATCH`    | `{ name: string }`                                    | `Enters queue; Backend automatically assigns to existing or new room.` |
+| `SUBMIT_ANSWER` | `{ roomId: string; slot: 'p1' or 'p2'; val: number }` | `Sends guess to server for validation against hidden answer.`          |
+| `REQUEST_HELP`  | `{ roomId: string; slot: 'p1' or 'p2' }`              | `Triggers help-needed notification to partner.`                        |
+| `ACCEPT_HELP`   | `{ roomId: string; slot: 'p1' or 'p2' }`              | `Partner agrees; enables cross-input typing for both players.`         |
 
 ---
 
-## 3. Backend → Frontend (Events)
+## 3. Backend -> Frontend (Events)
 
 Direction: Backend updates UI.
 
 ---
 
-| Event             | Payload                           | Context                                            |
-| :---------------- | :-------------------------------- | :------------------------------------------------- |
-| `AWAITING_PLAYER` | `null`                            | `Triggers "Looking for partner..." spinner.`       |
-| `GAME_START`      | `{ GameStartPayload }`            | `Initial room sync; transitions UI to game board.` |
-| `LIVE_FEEDBACK`   | `{ slot, isCorrect, solverName }` | `Renders the Green Check or Red X temporarily.`    |
-| `NEXT_LEVEL`      | `{ level, problems }`             | `Clears board and renders new level questions.`    |
-| `HELP_STATUS`     | `{ isHelpActive, targetSlot }`    | `Unlocks the target input box for the partner.`    |
+| Event             | Payload                                    | Context                                                |
+| :---------------- | :----------------------------------------- | :----------------------------------------------------- |
+| `AWAITING_PLAYER` | `null`                                     | `Triggers "Looking for partner..." spinner.`           |
+| `GAME_START`      | `{ GameStartPayload }`                     | `Initial room sync; transitions UI to game board.`     |
+| `LIVE_FEEDBACK`   | `{ slot, isCorrect, solverName }`          | `Renders the Green Check or Red X temporarily.`        |
+| `NEXT_LEVEL`      | `{ level, problems }`                      | `Clears board and renders new level questions.`        |
+| `HELP_REQUESTED`  | `{ targetSlot }`                           | `Highlights the target player for help.`               |
+| `HELP_STATUS`     | `{ isHelpActive, targetSlot }`             | `Unlocks the target input box for the partner.`        |
+| `PLAYER_LEFT`     | `{ partnerName: string or null }`          | `Notifies remaining player that partner disconnected.` |
+| `GAME_OVER`       | `{ message, stats }`                       | `Ends the game and shows summary.`                     |
 
 ---
-
 ## 4. TypeScript Implementation
 
 ```typescript
@@ -107,10 +109,9 @@ export type MessageToBackend =
       command: 'ACCEPT_HELP';
       payload: {
         roomId: string;
-        slot: PlayerSlot; // ← The slot that NEEDS help (not the accepter)
+        slot: PlayerSlot; // The slot that needs help (not the accepter)
       };
     };
-
 export type MessageToFrontend =
   | { event: 'AWAITING_PLAYER'; payload: null }
   | { event: 'GAME_START'; payload: GameStartPayload }
@@ -119,6 +120,7 @@ export type MessageToFrontend =
       payload: { slot: PlayerSlot; isCorrect: boolean; solverName: string };
     }
   | { event: 'NEXT_LEVEL'; payload: { level: number; problems: ProblemSet } }
+  | { event: 'HELP_REQUESTED'; payload: { targetSlot: PlayerSlot } }
   | {
       event: 'HELP_STATUS';
       payload: { isHelpActive: boolean; targetSlot: PlayerSlot };
@@ -127,8 +129,7 @@ export type MessageToFrontend =
       event: 'GAME_OVER';
       payload: { message: string; stats: { totalLevels: number } };
     }
-  | { event: 'PLAYER_LEFT'; payload: { partnerName: string } };
-
+  | { event: 'PLAYER_LEFT'; payload: { partnerName: string | null } };
 // --- 3. Backend Private State (Not for FE) ---
 
 export interface ActiveRoom {
@@ -139,3 +140,9 @@ export interface ActiveRoom {
   isHelpActive: { p1: boolean; p2: boolean };
 }
 ```
+
+
+
+
+
+

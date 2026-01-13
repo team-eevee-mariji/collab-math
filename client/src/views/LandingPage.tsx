@@ -8,11 +8,13 @@ export type LandingMode = "CREATE" | "JOIN";
 type LandingPageProps = {
   onSubmit: (args: { name: string; mode: LandingMode }) => void;
   initialName?: string;
+  canJoinExisting?: boolean;
 };
 
 export default function LandingPage({
   onSubmit,
   initialName = "",
+  canJoinExisting = false,
 }: LandingPageProps) {
   const [name, setName] = useState(initialName);
 
@@ -83,6 +85,14 @@ export default function LandingPage({
                 disabled={!canSubmit}
                 label="Find a Match"
                 className="w-full rounded-lg bg-white py-2 font-semibold text-slate-900 border border-slate-300 hover:bg-slate-50 disabled:opacity-50 text-sm"
+              />
+
+              <ActionButton
+                type="button"
+                disabled={!canSubmit || !canJoinExisting}
+                label="Join existing room"
+                className="w-full rounded-lg bg-white py-2 font-semibold text-slate-900 border border-slate-300 hover:bg-slate-50 disabled:opacity-50 text-sm"
+                onClick={() => onSubmit({ name: trimmed, mode: "JOIN" })}
               />
 
               {!canSubmit && (

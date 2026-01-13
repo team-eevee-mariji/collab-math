@@ -27,4 +27,5 @@ export type MessageToFrontend =
   | { event: "LIVE_FEEDBACK"; payload: { slot: PlayerSlot; isCorrect: boolean; solverName: string } }
   | { event: "NEXT_LEVEL"; payload: { level: number; problems: ProblemSet } }
   | { event: "HELP_STATUS"; payload: { isHelpActive: boolean; targetSlot: PlayerSlot } }
+  | { event: "PLAYER_LEFT"; payload: { partnerName: string | null } }
   | { event: "GAME_OVER"; payload: { message: string; stats: { totalLevels: number } } };

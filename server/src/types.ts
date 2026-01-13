@@ -27,10 +27,10 @@ export type MessageToBackend =
       command: 'ACCEPT_HELP';
       payload: {
         roomId: string;
-        slot: PlayerSlot; // ← The slot that NEEDS help (not the accepter)
+        slot: PlayerSlot; // ƒ+? The slot that NEEDS help (not the accepter)
       };
-    };
-
+    }
+  ;
 export type MessageToFrontend =
   | { event: 'AWAITING_PLAYER'; payload: null }
   | { event: 'GAME_START'; payload: GameStartPayload }
@@ -59,3 +59,4 @@ export interface ActiveRoom {
   isHelpRequested: { p1: boolean; p2: boolean };
   isHelpActive: { p1: boolean; p2: boolean };
 }
+

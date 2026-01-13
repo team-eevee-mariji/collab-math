@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { GameContext, initialGameState } from "./GameContext";
 import type { View, Player, Problems, Feedback, GameOver } from "./GameContext";
 import type { PlayerSlot } from "../types";
@@ -7,6 +7,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [currentView, setCurrentView] = useState<View>("LANDING");
   const [userName, setUserName] = useState("");
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [lastRoomId, setLastRoomId] = useState<string | null>(null);
   const [mySlot, setMySlot] = useState<PlayerSlot | null>(null);
 
   // 🔥 GAME ROOM STATE
@@ -19,7 +20,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [helpRequestedSlot, setHelpRequestedSlot] = useState<PlayerSlot | null>(null);
   const [gameOver, setGameOver] = useState<GameOver | null>(null);
 
-  const resetRoom = () => {
+  const resetRoom = useCallback(() => {
     setCurrentView("LANDING");
     setRoomId(null);
     setMySlot(null);
@@ -31,13 +32,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsHelpActive(false);
     setHelpRequestedSlot(null);
     setGameOver(null);
-  };
+  }, [
+    setCurrentView,
+    setRoomId,
+    setMySlot,
+    setLevel,
+    setMe,
+    setPartner,
+    setProblems,
+    setFeedback,
+    setIsHelpActive,
+    setHelpRequestedSlot,
+    setGameOver,
+  ]);
 
   const reset = () => {
     setCurrentView("LANDING");
     setUserName("");
     setRoomId(null);
     setMySlot(null);
+    setLastRoomId(null);
 
     setLevel(1);
     setMe(null);
@@ -57,6 +71,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setUserName,
       roomId,
       setRoomId,
+      lastRoomId,
+      setLastRoomId,
       mySlot,
       setMySlot,
 
@@ -84,6 +100,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       currentView,
       userName,
       roomId,
+      lastRoomId,
       mySlot,
       level,
       me,

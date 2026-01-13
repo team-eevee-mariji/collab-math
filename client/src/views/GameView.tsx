@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useGame } from "../context/GameContext";
 import { useSocket } from "../context/SocketContext";
 import type { PlayerSlot } from "../types";
@@ -19,25 +19,16 @@ export default function GameView() {
     reset,
   } = useGame();
 
-  const { send } = useSocket();
+  const { send, disconnect } = useSocket();
 
   const [p1Answer, setP1Answer] = useState("");
   const [p2Answer, setP2Answer] = useState("");
-  const [levelPulse, setLevelPulse] = useState(false);
 
   const headerSymbols = ["+", "-", "x", "/"];
 
-  useEffect(() => {
-    setP1Answer("");
-    setP2Answer("");
-    setLevelPulse(true);
-    const timer = setTimeout(() => setLevelPulse(false), 600);
-    return () => clearTimeout(timer);
-  }, [level]);
-
   // avoid crash during brief state transitions
   if (!roomId || !me || !partner || !problems || !mySlot) {
-    return <div style={{ padding: 24 }}>Loading game room…</div>;
+    return <div style={{ padding: 24 }}>Loading game room...</div>;
   }
 
   const submit = (slot: PlayerSlot) => {
@@ -82,10 +73,6 @@ const showHelpBanner = Boolean(helpTarget && mySlot !== helpTarget);
 const helpBannerText = isHelpActive
   ? `${helpRequesterName ?? "Partner"} is getting help. You can type in their card.`
   : `${helpRequesterName ?? "Partner"} needs help. Accept on their card.`;
-const levelBadgeStyle = levelPulse
-  ? { ...styles.levelBadge, ...styles.levelBadgePulse }
-  : styles.levelBadge;
-
   return (
     <div style={styles.page}>
       <div style={styles.frame}>
@@ -97,7 +84,7 @@ const levelBadgeStyle = levelPulse
           </div>
 
           <div style={styles.headerRight}>
-            <div style={levelBadgeStyle}>
+            <div style={styles.levelBadge}>
               <div style={styles.levelLabel}>LEVEL</div>
               <div style={styles.levelValue}>{level}</div>
             </div>
@@ -164,18 +151,29 @@ const levelBadgeStyle = levelPulse
         {/* Footer */}
         <div style={styles.footer}>
           <div style={styles.tagline}>
-            Collaborate • Submit • Level up
+            Collaborate - Submit - Level up
           </div>
 
-          <button
-            style={{ ...styles.helpBtn, opacity: helpButtonDisabled ? 0.7 : 1 }}
-            disabled={helpButtonDisabled}
-            onClick={() =>
-              send({ command: "REQUEST_HELP", payload: { roomId, slot: mySlot } })
-            }
-          >
-            {helpButtonLabel}
-          </button>
+          <div style={styles.footerActions}>
+            <button
+              style={{ ...styles.helpBtn, opacity: helpButtonDisabled ? 0.7 : 1 }}
+              disabled={helpButtonDisabled}
+              onClick={() =>
+                send({ command: "REQUEST_HELP", payload: { roomId, slot: mySlot } })
+              }
+            >
+              {helpButtonLabel}
+            </button>
+            <button
+              style={styles.leaveBtn}
+              onClick={() => {
+                disconnect();
+                resetRoom();
+              }}
+            >
+              Leave room
+            </button>
+          </div>
         </div>
 
         {gameOver && (
@@ -231,8 +229,8 @@ function PlayerPanel(props: {
     props;
   const panelStyle = highlight ? { ...styles.panel, ...styles.panelAlert } : styles.panel;
   const feedbackStyle = feedback?.isCorrect
-    ? { ...styles.feedback, ...styles.feedbackCorrect }
-    : { ...styles.feedback, ...styles.feedbackIncorrect };
+    ? { ...styles.promptFeedback, ...styles.promptFeedbackCorrect }
+    : { ...styles.promptFeedback, ...styles.promptFeedbackIncorrect };
 
   return (
     <div style={panelStyle}>
@@ -250,8 +248,21 @@ function PlayerPanel(props: {
       </div>
 
       <div style={styles.promptBox}>
-        <div style={styles.promptTitle}>Prompt</div>
-        <div style={styles.promptText}>{prompt}</div>
+        <div style={styles.promptRow}>
+          <div style={styles.promptText}>{prompt}</div>
+          <div style={styles.promptFeedbackWrap}>
+            {feedback ? (
+              <div style={feedbackStyle}>
+                <span style={styles.promptFeedbackIcon}>
+                  {feedback.isCorrect ? String.fromCharCode(0x2713) : "x"}
+                </span>
+                <span>{feedback.message}</span>
+              </div>
+            ) : (
+              <div style={styles.promptFeedbackPlaceholder}>Feedback</div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div style={styles.workArea}>
@@ -269,7 +280,7 @@ function PlayerPanel(props: {
           disabled={!enabled}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
-          placeholder={enabled ? "Type your answer…" : "Waiting…"}
+          placeholder={enabled ? "Type your answer..." : "Waiting..."}
           onKeyDown={(e) => {
             if (e.key === "Enter") onSubmit();
           }}
@@ -287,12 +298,6 @@ function PlayerPanel(props: {
         </button>
       </div>
 
-      {feedback && (
-        <div style={feedbackStyle}>
-          <span style={styles.feedbackIcon}>{feedback.isCorrect ? "✓" : "x"}</span>
-          <span>{feedback.message}</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -342,11 +347,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "3px 3px 0 #111",
     background: "#fff5cc",
     minWidth: 70,
-    transition: "transform 160ms ease, box-shadow 160ms ease",
-  },
-  levelBadgePulse: {
-    transform: "scale(1.08)",
-    boxShadow: "0 0 0 3px #facc15, 3px 3px 0 #111",
+    animation: "mcgLevelPulse 600ms ease",
   },
   levelLabel: { fontSize: 10, fontWeight: 800, letterSpacing: 1 },
   levelValue: { fontSize: 22, fontWeight: 900, lineHeight: 1.1 },
@@ -380,11 +381,17 @@ const styles: Record<string, React.CSSProperties> = {
   promptBox: {
     border: "2px solid #111",
     borderRadius: 14,
-    padding: 12,
+    padding: "8px 12px",
     background: "#fafafa",
   },
-  promptTitle: { fontSize: 12, fontWeight: 800, opacity: 0.7 },
-  promptText: { marginTop: 6, fontSize: 16, fontWeight: 700 },
+  promptRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
+    alignItems: "center",
+    gap: 8,
+  },
+  promptText: { fontSize: 15, fontWeight: 700, justifySelf: "center", gridColumn: 2 },
+  promptFeedbackWrap: { justifySelf: "end", gridColumn: 3 },
   workArea: {
     flex: 1,
     border: "2px dashed #111",
@@ -411,25 +418,33 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "3px 3px 0 #111",
     background: "#fff",
   },
-  feedback: {
-    borderRadius: 12,
+  promptFeedback: {
+    borderRadius: 999,
     border: "2px solid #111",
-    padding: 10,
+    padding: "2px 8px",
     background: "#fff",
-    fontSize: 13,
+    fontSize: 12,
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
+    whiteSpace: "nowrap",
   },
-  feedbackIcon: {
-    fontSize: 14,
+  promptFeedbackPlaceholder: {
+    visibility: "hidden",
+    borderRadius: 999,
+    border: "2px solid transparent",
+    padding: "2px 8px",
+    fontSize: 12,
+  },
+  promptFeedbackIcon: {
+    fontSize: 12,
     fontWeight: 900,
   },
-  feedbackCorrect: {
+  promptFeedbackCorrect: {
     borderColor: "#16a34a",
     background: "#dcfce7",
   },
-  feedbackIncorrect: {
+  promptFeedbackIncorrect: {
     borderColor: "#ef4444",
     background: "#fee2e2",
   },
@@ -531,7 +546,20 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: "2px dashed #111",
   },
   tagline: { fontSize: 13, opacity: 0.75 },
+  footerActions: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+  },
   helpBtn: {
+    borderRadius: 999,
+    border: "2px solid #111",
+    padding: "10px 14px",
+    fontWeight: 800,
+    boxShadow: "3px 3px 0 #111",
+    background: "#fff",
+  },
+  leaveBtn: {
     borderRadius: 999,
     border: "2px solid #111",
     padding: "10px 14px",

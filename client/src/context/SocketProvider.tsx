@@ -47,6 +47,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         socketRef.current?.emit('message', msg);
       },
 
+      connect: () => {
+        socketRef.current?.connect();
+      },
+
+      disconnect: () => {
+        socketRef.current?.disconnect();
+      },
+
       // Subscribe returns an unsubscribe fn.
       subscribe: (handler: SocketEventHandler) => {
         handlersRef.current.add(handler);
