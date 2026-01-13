@@ -20,11 +20,13 @@ function AppInner() {
     setMySlot,
   } = useGame();
   const { isConnected, send, subscribe } = useSocket();
-
+  console.log('Socket connected:', isConnected);
+  
   useEffect(() => {
     return subscribe((event: MessageToFrontend) => {
       switch (event.event) {
         case "AWAITING_PLAYER": {
+          console.log('received response from back end AWAITING PLAYER');
           setCurrentView("WAITING");
           break;
         }
@@ -52,7 +54,9 @@ function AppInner() {
 
   const handleLandingSubmit = ({ name }: { name: string; mode: LandingMode }) => {
     setUserName(name);
+    console.log('userName', userName);
     send({ command: "FIND_MATCH", payload: { name } });
+    console.log('sent user name with FIND_MATCH command');
   };
 
   const handleBackToLanding = () => {
