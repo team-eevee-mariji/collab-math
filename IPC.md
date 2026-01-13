@@ -116,6 +116,10 @@ export type MessageToFrontend =
   | {
       event: 'HELP_STATUS';
       payload: { isHelpActive: boolean; targetSlot: PlayerSlot };
+    }
+  | {
+      event: 'GAME_OVER';
+      payload: { message: string; stats: { totalLevels: number } };
     };
 
 // --- 3. Backend Private State (Not for FE) ---
