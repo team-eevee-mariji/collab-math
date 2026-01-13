@@ -23,6 +23,8 @@ export const setupGameController = (io: Server, socket: Socket) => {
           socket.join(id);
           socket.emit('message', { event: 'AWAITING_PLAYER', payload: null });
         } else if (waitingPlayer) {
+          const player2name = name;
+          const player2ID = socket.id;
           const roomID = waitingPlayer.roomId;
           const existingRoom = activeRoom[roomID];
 
