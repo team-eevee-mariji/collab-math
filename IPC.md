@@ -102,8 +102,14 @@ export type MessageToBackend =
       command: 'SUBMIT_ANSWER';
       payload: { roomId: string; slot: PlayerSlot; val: number };
     }
-  | { command: 'REQUEST_HELP'; payload: { roomId: string } }
-  | { command: 'ACCEPT_HELP'; payload: { roomId: string } };
+  | { command: 'REQUEST_HELP'; payload: { roomId: string; slot: PlayerSlot } }
+  | {
+      command: 'ACCEPT_HELP';
+      payload: {
+        roomId: string;
+        slot: PlayerSlot; // ← The slot that NEEDS help (not the accepter)
+      };
+    };
 
 export type MessageToFrontend =
   | { event: 'AWAITING_PLAYER'; payload: null }
@@ -128,6 +134,7 @@ export interface ActiveRoom {
   level: number;
   p1: { id: string; name: string; solved: boolean; ans: number };
   p2: { id: string; name: string; solved: boolean; ans: number };
-  isHelpActive: boolean;
+  isHelpRequested: { p1: boolean; p2: boolean };
+  isHelpActive: { p1: boolean; p2: boolean };
 }
 ```

@@ -22,8 +22,14 @@ export type MessageToBackend =
       command: 'SUBMIT_ANSWER';
       payload: { roomId: string; slot: PlayerSlot; val: number };
     }
-  | { command: 'REQUEST_HELP'; payload: { roomId: string } }
-  | { command: 'ACCEPT_HELP'; payload: { roomId: string } };
+  | { command: 'REQUEST_HELP'; payload: { roomId: string; slot: PlayerSlot } }
+  | {
+      command: 'ACCEPT_HELP';
+      payload: {
+        roomId: string;
+        slot: PlayerSlot; // ← The slot that NEEDS help (not the accepter)
+      };
+    };
 
 export type MessageToFrontend =
   | { event: 'AWAITING_PLAYER'; payload: null }
@@ -33,6 +39,7 @@ export type MessageToFrontend =
       payload: { slot: PlayerSlot; isCorrect: boolean; solverName: string };
     }
   | { event: 'NEXT_LEVEL'; payload: { level: number; problems: ProblemSet } }
+  | { event: 'HELP_REQUESTED'; payload: { targetSlot: PlayerSlot } }
   | {
       event: 'HELP_STATUS';
       payload: { isHelpActive: boolean; targetSlot: PlayerSlot };
@@ -48,5 +55,6 @@ export interface ActiveRoom {
   level: number;
   p1: { id: string; name: string; solved: boolean; ans: number } | null;
   p2: { id: string; name: string; solved: boolean; ans: number } | null;
-  isHelpActive: boolean;
+  isHelpRequested: { p1: boolean; p2: boolean };
+  isHelpActive: { p1: boolean; p2: boolean };
 }

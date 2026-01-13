@@ -4,19 +4,16 @@ import { getLevelData, LevelResult } from './questions.js';
 import type { PlayerSlot } from './types.js';
 
 export const setupGameController = (io: Server, socket: Socket) => {
-  // --- 1. MATCHMAKING LOGIC ---
-
   socket.on('message', ({ command, payload }) => {
     switch (command) {
-      case 'FIND_MATCH':
+      case 'FIND_MATCH': {
         console.log('Received FIND_MATCH from:', payload.name);
         const { name } = payload;
-        //if waitingPlayer is null
+
         if (!waitingPlayer) {
-          //generate UUID and get socketid
           const id = crypto.randomUUID();
           const playerID = socket.id;
-          //add player to waiting
+
           setWaitingPlayer(playerID, name, id);
           socket.join(id);
           socket.emit('message', { event: 'AWAITING_PLAYER', payload: null });
@@ -42,7 +39,8 @@ export const setupGameController = (io: Server, socket: Socket) => {
                 solved: false,
                 ans: answers.p2,
               },
-              isHelpActive: false,
+              isHelpRequested: { p1: false, p2: false },
+              isHelpActive: { p1: false, p2: false },
             };
 
             socket.join(roomID);
@@ -72,7 +70,8 @@ export const setupGameController = (io: Server, socket: Socket) => {
           }
         }
         break;
-      case 'SUBMIT_ANSWER':
+      }
+      case 'SUBMIT_ANSWER': {
         const { roomId, slot, val } = payload as {
           roomId: string;
           slot: PlayerSlot;
@@ -132,19 +131,50 @@ export const setupGameController = (io: Server, socket: Socket) => {
           }
         }
         break;
+      }
+      case 'REQUEST_HELP': {
+        const { roomId, slot } = payload as {
+          roomId: string;
+          slot: PlayerSlot;
+        };
 
+        const currentRoom = activeRoom[roomId];
+        if (!currentRoom) {
+          console.log(`room not found', ${roomId}`);
+          return;
+        }
+        currentRoom.isHelpRequested[slot] = true;
+        io.to(roomId).emit('message', {
+          event: 'HELP_REQUESTED',
+          payload: { targetSlot: slot },
+        });
+        break;
+      }
+      case 'ACCEPT_HELP': {
+        const { roomId, slot } = payload as {
+          roomId: string;
+          slot: PlayerSlot;
+        };
+        const currentRoom = activeRoom[roomId];
+        if (!currentRoom) {
+          console.log(`room not found', ${roomId}`);
+          return;
+        }
+        if (currentRoom.isHelpRequested[slot]) {
+          currentRoom.isHelpActive[slot] = true;
+          io.to(roomId).emit('message', {
+            event: 'HELP_STATUS',
+            payload: {
+              isHelpActive: currentRoom.isHelpActive[slot],
+              targetSlot: slot,
+            },
+          });
+        }
+        break;
+      }
       default:
         console.log('Unknown command:', command);
     }
-  });
-
-  // --- 3. COLLABORATION LOGIC ---
-  socket.on('REQUEST_HELP', ({ roomId }) => {
-    // Broadcast HELP_STATUS to the partner
-  });
-
-  socket.on('ACCEPT_HELP', ({ roomId }) => {
-    // Sync help state
   });
 
   // --- 4. CLEANUP ---
