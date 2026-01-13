@@ -10,9 +10,9 @@
 
 | Key        | Type     | Description                         |
 | :--------- | :------- | :---------------------------------- | ------------------------- |
-| `playerId` | `string` | `Server-assigned unique Socket ID.` |
-| `name`     | `string` | `User-provided display name.`       |
-| `slot`     | `p1      | p2`                                 | `Assigned game position.` |
+| `playerId` | `string` | `Server-assigned unique Socket ID.` |                           |
+| `name`     | `string` | `User-provided display name.`       |                           |
+| `slot`     | `p1`     | `p2`                                | `Assigned game position.` |
 
 ---
 
@@ -51,10 +51,10 @@ Direction: UI triggers Backend logic.
 
 | Key             | Payload              | Description                                                            |
 | :-------------- | :------------------- | :--------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `FIND_MATCH`    | `{ name: string }`   | `Enters queue; Backend automatically assigns to existing or new room.` |
-| `SUBMIT_ANSWER` | `{ slot: 'p1'        | 'p2', val: number }`                                                   | `Sends guess to server for validation against hidden answer.` |
-| `REQUEST_HELP`  | `{ roomId: string }` | `Triggers help-needed notification to partner.`                        |
-| `ACCEPT_HELP`   | `{ roomId: string }` | `Partner agrees; enables cross-input typing for both players.`         |
+| `FIND_MATCH`    | `{ name: string }`   | `Enters queue; Backend automatically assigns to existing or new room.` |                                                               |
+| `SUBMIT_ANSWER` | `{ slot: 'p1'}`      | `'p2', val: number }`                                                  | `Sends guess to server for validation against hidden answer.` |
+| `REQUEST_HELP`  | `{ roomId: string }` | `Triggers help-needed notification to partner.`                        |                                                               |
+| `ACCEPT_HELP`   | `{ roomId: string }` | `Partner agrees; enables cross-input typing for both players.`         |                                                               |
 
 ---
 
