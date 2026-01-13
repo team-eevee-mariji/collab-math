@@ -28,49 +28,52 @@
 
 ---
 
-### `RoomState`
+### `ActiveRoom` (Server State)
 
 ---
 
-| Key            | Type         | Description                                             |
-| :------------- | :----------- | :------------------------------------------------------ |
-| `roomId`       | `string`     | `UUID for the active game instance.`                    |
-| `level`        | `number`     | `Current difficulty tier (1, 2, 3...).`                 |
-| `p1Name`       | `string`     | `Display name for Player 1.`                            |
-| `p2Name`       | `string`     | `Display name for Player 2.`                            |
-| `problemSet`   | `ProblemSet` | `The dual equations (Question text only).`              |
-| `isHelpActive` | `boolean`    | `Flag: Is Player B currently allowed to type in Box 1?` |
+| Key               | Type                           | Description                                |
+| :---------------- | :----------------------------- | :----------------------------------------- |
+| `level`           | `number`                       | `Current difficulty tier.`                 |
+| `p1`              | `PlayerData \| null`           | `{ id, name, solved, ans } for Player 1.`  |
+| `p2`              | `PlayerData \| null`           | `{ id, name, solved, ans } for Player 2.`  |
+| `isHelpRequested` | `{ p1: boolean; p2: boolean }` | `Tracks help requests per slot.`           |
+| `isHelpActive`    | `{ p1: boolean; p2: boolean }` | `Tracks active collaborative permissions.` |
 
 ---
 
-## 2. Frontend -> Backend (Commands)
+## 1. Frontend -> Backend (Commands)
 
 Direction: UI triggers Backend logic.
 
 ---
 
-| Key             | Payload              | Description                                                            |
-| :-------------- | :------------------- | :--------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `FIND_MATCH`    | `{ name: string }`   | `Enters queue; Backend automatically assigns to existing or new room.` |                                                               |
-| `SUBMIT_ANSWER` | `{ slot: 'p1'}`      | `'p2', val: number }`                                                  | `Sends guess to server for validation against hidden answer.` |
-| `REQUEST_HELP`  | `{ roomId: string }` | `Triggers help-needed notification to partner.`                        |                                                               |
-| `ACCEPT_HELP`   | `{ roomId: string }` | `Partner agrees; enables cross-input typing for both players.`         |                                                               |
+| Key             | Payload                                                   | Description                                                            |
+| :-------------- | :-------------------------------------------------------- | :--------------------------------------------------------------------- |
+| `FIND_MATCH`    | `{ name: string }`                                        | `Enters queue; Backend automatically assigns to existing or new room.` |
+| `SUBMIT_ANSWER` | `{ roomId: string; slot: PlayerSlot; val: number }`       | `Sends guess to server for validation against hidden answer.`          |
+| `REQUEST_HELP`  | `{ roomId: string; slot: PlayerSlot }`                    | `Triggers help-needed notification to partner for a specific slot.`    |
+| `ACCEPT_HELP`   | `{ roomId: string; slot: PlayerSlot }`                    | `Partner agrees to help the target slot; enables collaborative input.` |
+| `CANVAS_UPDATE` | `{ roomId: string; slot: PlayerSlot; canvasData: any[] }` | `Sends local drawing data to be synced with the partner's view.`       |
 
 ---
 
-## 3. Backend → Frontend (Events)
+## 2. Backend -> Frontend (Events)
 
-Direction: Backend updates UI.
+Direction: Backend updates UI state.
 
 ---
 
-| Event             | Payload                           | Context                                            |
-| :---------------- | :-------------------------------- | :------------------------------------------------- |
-| `AWAITING_PLAYER` | `null`                            | `Triggers "Looking for partner..." spinner.`       |
-| `GAME_START`      | `{ GameStartPayload }`            | `Initial room sync; transitions UI to game board.` |
-| `LIVE_FEEDBACK`   | `{ slot, isCorrect, solverName }` | `Renders the Green Check or Red X temporarily.`    |
-| `NEXT_LEVEL`      | `{ level, problems }`             | `Clears board and renders new level questions.`    |
-| `HELP_STATUS`     | `{ isHelpActive, targetSlot }`    | `Unlocks the target input box for the partner.`    |
+| Key               | Payload                                                        | Description                                                          |
+| :---------------- | :------------------------------------------------------------- | :------------------------------------------------------------------- |
+| `AWAITING_PLAYER` | `null`                                                         | `UI shows loading state until a second player joins the room.`       |
+| `GAME_START`      | `GameStartPayload`                                             | `Initializes the game session with player roles and level data.`     |
+| `LIVE_FEEDBACK`   | `{ slot: PlayerSlot; isCorrect: boolean; solverName: string }` | `Updates UI to show if a submission was successful and who did it.`  |
+| `NEXT_LEVEL`      | `{ level: number; problems: ProblemSet }`                      | `Transitions both players to the next challenge phase.`              |
+| `HELP_STATUS`     | `{ isHelpActive: boolean; targetSlot: PlayerSlot }`            | `Toggles the help UI overlay for the player in need.`                |
+| `CANVAS_UPDATE`   | `{ slot: PlayerSlot; canvasData: any[] }`                      | `Pushes partner's drawing data to the local canvas component.`       |
+| `PLAYER_LEFT`     | `{ partnerName: string }`                                      | `Notifies user of disconnection and triggers cleanup/forfeit logic.` |
+| `GAME_OVER`       | `{ message: string; stats: { totalLevels: number } }`          | `Displays final summary and level counts at the end of the session.` |
 
 ---
 
@@ -109,6 +112,10 @@ export type MessageToBackend =
         roomId: string;
         slot: PlayerSlot; // ← The slot that NEEDS help (not the accepter)
       };
+    }
+  | {
+      command: 'CANVAS_UPDATE';
+      payload: { roomId: string; slot: PlayerSlot; canvasData: any[] };
     };
 
 export type MessageToFrontend =
@@ -127,7 +134,11 @@ export type MessageToFrontend =
       event: 'GAME_OVER';
       payload: { message: string; stats: { totalLevels: number } };
     }
-  | { event: 'PLAYER_LEFT'; payload: { partnerName: string } };
+  | { event: 'PLAYER_LEFT'; payload: { partnerName: string } }
+  | {
+      event: 'CANVAS_UPDATE';
+      payload: { slot: PlayerSlot; canvasData: any[] };
+    };
 
 // --- 3. Backend Private State (Not for FE) ---
 
