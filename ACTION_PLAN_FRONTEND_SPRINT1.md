@@ -32,8 +32,8 @@ src/
 
 ## Dev: Infrastructure & Routing
 
-[ ] **App Router:** In App.tsx, implement a state-based view switcher: currentView: 'LANDING' | 'WAITING' | 'GAME'.
-[ ] **Context:** Create GameContext.tsx to store userName, roomId, and mySlot.
+[x] **App Router:** In App.tsx, implement a state-based view switcher: currentView: 'LANDING' | 'WAITING' | 'GAME'.
+[x] **Context:** Create GameContext.tsx to store userName, roomId, and mySlot.
 
 ## Dev: Landing Page UI
 
@@ -47,21 +47,21 @@ src/
 
 ## Dev: Socket Service
 
-[ ] **Setup:** Create src/services/socket.ts to initialize the socket.io-client.
-[ ] **Hook:** Create useSocket.ts to expose emit and on functions to components.
+[x] **Setup:** Create src/services/socket.ts to initialize the socket.io-client.
+[x] **Hook:** Create useSocket.ts to expose emit and on functions to components.
 
 ## Dev: Waiting Room & Protocol Listeners
 
 [x] **View:** Build WaitingRoom.tsx showing "1 player is waiting" (roomId is only available after GAME_START).
-[ ] **Command:** Wire Create Room button to emit FIND_MATCH with the { name: string } payload.
-[ ] **Listener:** Setup socket.on('AWAITING_PLAYER') to trigger the transition to the Waiting View.
-[ ] **Listener:** Setup socket.on('GAME_START') to capture the GameStartPayload and move to the 'GAME' view.
+[x] **Command:** Wire Create Room button to emit FIND_MATCH with the { name: string } payload.
+[x] **Listener:** Setup socket.on('AWAITING_PLAYER') to trigger the transition to the Waiting View.
+[x] **Listener:** Setup socket.on('GAME_START') to capture the GameStartPayload and move to the 'GAME' view.
 
 ## Backend - Frontend Integration (Sync Points)
 
-[ ] Verify Matchmaking:
-[ ] FE Action: Send FIND_MATCH command.
-[ ] BE Dependency: Backend must respond with the AWAITING_PLAYER event.
-[ ] Verify Start Game:
-[ ] BE Dependency: Backend must emit GAME_START once a partner is found.
+[x] Verify Matchmaking:
+[x] FE Action: Send FIND_MATCH command.
+[x] BE Dependency: Backend must respond with the AWAITING_PLAYER event.
+[x] Verify Start Game:
+[x] BE Dependency: Backend must emit GAME_START once a partner is found.
 [ ] Error Handling: Align error handling with IPC (add ERROR to IPC if needed, or handle Socket.io connection errors separately).

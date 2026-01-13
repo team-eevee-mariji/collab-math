@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { GameContext, initialGameState } from "./GameContext";
-import type { View, Player, Problems, Feedback } from "./GameContext";
+import type { View, Player, Problems, Feedback, GameOver } from "./GameContext";
 import type { PlayerSlot } from "../types";
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -16,6 +16,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [problems, setProblems] = useState<Problems | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [isHelpActive, setIsHelpActive] = useState(false);
+  const [helpRequestedSlot, setHelpRequestedSlot] = useState<PlayerSlot | null>(null);
+  const [gameOver, setGameOver] = useState<GameOver | null>(null);
+
+  const resetRoom = () => {
+    setCurrentView("LANDING");
+    setRoomId(null);
+    setMySlot(null);
+    setLevel(1);
+    setMe(null);
+    setPartner(null);
+    setProblems(null);
+    setFeedback(null);
+    setIsHelpActive(false);
+    setHelpRequestedSlot(null);
+    setGameOver(null);
+  };
 
   const reset = () => {
     setCurrentView("LANDING");
@@ -29,6 +45,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setProblems(null);
     setFeedback(null);
     setIsHelpActive(false);
+    setHelpRequestedSlot(null);
+    setGameOver(null);
   };
 
   const value = useMemo(
@@ -54,6 +72,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setFeedback,
       isHelpActive,
       setIsHelpActive,
+      helpRequestedSlot,
+      setHelpRequestedSlot,
+      gameOver,
+      setGameOver,
+      resetRoom,
 
       reset,
     }),
@@ -68,6 +91,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       problems,
       feedback,
       isHelpActive,
+      helpRequestedSlot,
+      gameOver,
+      resetRoom,
     ]
   );
 

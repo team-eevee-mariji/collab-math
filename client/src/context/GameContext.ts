@@ -16,7 +16,13 @@ export type Problems = {
 export type Feedback = {
   slot: PlayerSlot;
   message: string;
+  isCorrect: boolean;
   ts?: number;
+};
+
+export type GameOver = {
+  message: string;
+  stats: { totalLevels: number };
 };
 
 export type GameState = {
@@ -28,6 +34,8 @@ export type GameState = {
 
   feedback: Feedback | null;
   isHelpActive: boolean;
+  helpRequestedSlot: PlayerSlot | null;
+  gameOver: GameOver | null;
 };
 
 export const initialGameState: GameState = {
@@ -38,6 +46,8 @@ export const initialGameState: GameState = {
   problems: null,
   feedback: null,
   isHelpActive: false,
+  helpRequestedSlot: null,
+  gameOver: null,
 };
 
 export type GameContextValue = {
@@ -75,6 +85,13 @@ export type GameContextValue = {
   isHelpActive: boolean;
   setIsHelpActive: (v: boolean) => void;
 
+  helpRequestedSlot: PlayerSlot | null;
+  setHelpRequestedSlot: (slot: PlayerSlot | null) => void;
+
+  gameOver: GameOver | null;
+  setGameOver: (payload: GameOver | null) => void;
+
+  resetRoom: () => void;
   reset: () => void;
 };
 

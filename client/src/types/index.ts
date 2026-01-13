@@ -22,6 +22,7 @@ export type MessageToBackend =
 
 export type MessageToFrontend =
   | { event: "AWAITING_PLAYER"; payload: null }
+  | { event: "HELP_REQUESTED"; payload: { targetSlot: PlayerSlot } }
   | { event: "GAME_START"; payload: GameStartPayload }
   | { event: "LIVE_FEEDBACK"; payload: { slot: PlayerSlot; isCorrect: boolean; solverName: string } }
   | { event: "NEXT_LEVEL"; payload: { level: number; problems: ProblemSet } }

@@ -24,6 +24,8 @@ const {
   setProblems,
   setFeedback,
   setIsHelpActive,
+  setHelpRequestedSlot,
+  setGameOver,
 } = useGame();
   const { isConnected, send, subscribe } = useSocket();
   console.log('Socket connected:', isConnected);
@@ -52,35 +54,53 @@ useEffect(() => {
         // optional: reset UI flags
         setFeedback(null);
         setIsHelpActive(false);
+        setHelpRequestedSlot(null);
+        setGameOver(null);
 
         setCurrentView("GAME");
         break;
       }
 
       case "NEXT_LEVEL": {
-        // payload expected: { level, problems }
-        const payload = event.payload as { level: number; problems: any };
-        setLevel(payload.level);
-        setProblems(payload.problems);
+        const { level, problems } = event.payload;
+        setLevel(level);
+        setProblems(problems);
         setFeedback(null);
+        setIsHelpActive(false);
+        setHelpRequestedSlot(null);
+        setGameOver(null);
         break;
       }
 
       case "LIVE_FEEDBACK": {
-        // payload expected: { slot, message, ts? }
-        setFeedback(event.payload as any);
+        const { slot, isCorrect } = event.payload;
+        setFeedback({
+          slot,
+          message: isCorrect ? "Correct" : "Try again",
+          isCorrect,
+          ts: Date.now(),
+        });
         break;
       }
 
       case "HELP_STATUS": {
-        // payload expected: { isHelpActive: boolean }
-        const payload = event.payload as { isHelpActive: boolean };
-        setIsHelpActive(!!payload.isHelpActive);
+        const { isHelpActive, targetSlot } = event.payload;
+        setIsHelpActive(Boolean(isHelpActive));
+        setHelpRequestedSlot(isHelpActive ? targetSlot : null);
+        break;
+      }
+
+      case "HELP_REQUESTED": {
+        const { targetSlot } = event.payload;
+        setHelpRequestedSlot(targetSlot);
         break;
       }
 
       case "GAME_OVER": {
-        setCurrentView("LANDING");
+        setGameOver(event.payload);
+        setFeedback(null);
+        setIsHelpActive(false);
+        setHelpRequestedSlot(null);
         break;
       }
 
@@ -99,6 +119,8 @@ useEffect(() => {
   setProblems,
   setFeedback,
   setIsHelpActive,
+  setHelpRequestedSlot,
+  setGameOver,
   subscribe,
 ]);
 
