@@ -11,46 +11,97 @@ import type { GameStartPayload, MessageToFrontend } from "./types";
 import type { LandingMode } from "./views/LandingPage";
 
 function AppInner() {
-  const {
-    currentView,
-    setCurrentView,
-    userName,
-    setUserName,
-    setRoomId,
-    setMySlot,
-  } = useGame();
+const {
+  currentView,
+  setCurrentView,
+  userName,
+  setUserName,
+  setRoomId,
+  setMySlot,
+  setLevel,
+  setMe,
+  setPartner,
+  setProblems,
+  setFeedback,
+  setIsHelpActive,
+} = useGame();
   const { isConnected, send, subscribe } = useSocket();
   console.log('Socket connected:', isConnected);
   
-  useEffect(() => {
-    return subscribe((event: MessageToFrontend) => {
-      switch (event.event) {
-        case "AWAITING_PLAYER": {
-          console.log('received response from back end AWAITING PLAYER');
-          setCurrentView("WAITING");
-          break;
-        }
-
-        case "GAME_START": {
-          const payload = event.payload as GameStartPayload;
-          setRoomId(payload.roomId);
-          setMySlot(payload.me.slot);
-          setCurrentView("GAME");
-          break;
-        }
-
-        case "GAME_OVER": {
-          // TODO: show summary screen later; for now return to landing.
-          setCurrentView("LANDING");
-          break;
-        }
-
-        default: {
-          // Later: handle LIVE_FEEDBACK, NEXT_LEVEL, HELP_STATUS.
-        }
+useEffect(() => {
+  return subscribe((event: MessageToFrontend) => {
+    switch (event.event) {
+      case "AWAITING_PLAYER": {
+        console.log("received response from back end AWAITING PLAYER");
+        setCurrentView("WAITING");
+        break;
       }
-    });
-  }, [setCurrentView, setRoomId, setMySlot, subscribe]);
+
+      case "GAME_START": {
+        const payload = event.payload as GameStartPayload;
+
+        setRoomId(payload.roomId);
+        setMySlot(payload.me.slot);
+
+        // ADD:
+        setLevel(payload.level);
+        setMe(payload.me);
+        setPartner(payload.partner);
+        setProblems(payload.problems);
+
+        // optional: reset UI flags
+        setFeedback(null);
+        setIsHelpActive(false);
+
+        setCurrentView("GAME");
+        break;
+      }
+
+      case "NEXT_LEVEL": {
+        // payload expected: { level, problems }
+        const payload = event.payload as { level: number; problems: any };
+        setLevel(payload.level);
+        setProblems(payload.problems);
+        setFeedback(null);
+        break;
+      }
+
+      case "LIVE_FEEDBACK": {
+        // payload expected: { slot, message, ts? }
+        setFeedback(event.payload as any);
+        break;
+      }
+
+      case "HELP_STATUS": {
+        // payload expected: { isHelpActive: boolean }
+        const payload = event.payload as { isHelpActive: boolean };
+        setIsHelpActive(!!payload.isHelpActive);
+        break;
+      }
+
+      case "GAME_OVER": {
+        setCurrentView("LANDING");
+        break;
+      }
+
+      default: {
+        // keep for future events
+      }
+    }
+  });
+}, [
+  setCurrentView,
+  setRoomId,
+  setMySlot,
+  setLevel,
+  setMe,
+  setPartner,
+  setProblems,
+  setFeedback,
+  setIsHelpActive,
+  subscribe,
+]);
+
 
   const handleLandingSubmit = ({ name }: { name: string; mode: LandingMode }) => {
     setUserName(name);

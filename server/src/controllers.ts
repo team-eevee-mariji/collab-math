@@ -67,7 +67,7 @@ export const setupGameController = (io: Server, socket: Socket) => {
               },
             });
 
-            setWaitingPlayer("", "", "");
+            setWaitingPlayer(null, "", "");
           }
         }
         break;
