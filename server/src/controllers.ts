@@ -1,5 +1,10 @@
 import { Server, Socket } from 'socket.io';
-import { waitingPlayer, activeRoom, setWaitingPlayer } from './models.js';
+import {
+  waitingPlayer,
+  activeRoom,
+  setWaitingPlayer,
+  roomsBySocket,
+} from './models.js';
 import { getLevelData, LevelResult } from './questions.js';
 import type { PlayerSlot } from './types.js';
 
@@ -13,60 +18,114 @@ export const setupGameController = (io: Server, socket: Socket) => {
         if (!waitingPlayer) {
           const id = crypto.randomUUID();
           const playerID = socket.id;
-
+          roomsBySocket[playerID] = id;
           setWaitingPlayer(playerID, name, id);
           socket.join(id);
           socket.emit('message', { event: 'AWAITING_PLAYER', payload: null });
         } else if (waitingPlayer) {
-          const player2name = name;
-          const player2ID = socket.id;
           const roomID = waitingPlayer.roomId;
-          const firstSet: LevelResult = getLevelData(1);
+          const existingRoom = activeRoom[roomID];
 
-          if (firstSet.status === 'SUCCESS') {
-            const answers = firstSet.data.answers;
-            activeRoom[roomID] = {
-              level: 1,
-              p1: {
-                id: waitingPlayer.id,
-                name: waitingPlayer.name,
+          //if a player left and want to put the new player into that room
+          if (existingRoom) {
+            const emptySlot = existingRoom!.p1!.id === '' ? 'p1' : 'p2';
+            const filledSlot = emptySlot === 'p1' ? 'p2' : 'p1';
+            const currentSet = getLevelData(existingRoom.level);
+            if (currentSet.status === 'SUCCESS') {
+              // Update room with new player
+              existingRoom[emptySlot] = {
+                id: socket.id,
+                name: name,
                 solved: false,
-                ans: answers.p1,
-              },
-              p2: {
-                id: player2ID,
-                name: player2name,
-                solved: false,
-                ans: answers.p2,
-              },
-              isHelpRequested: { p1: false, p2: false },
-              isHelpActive: { p1: false, p2: false },
-            };
+                ans: currentSet.data.answers[emptySlot],
+              };
 
-            socket.join(roomID);
-            socket.emit('message', {
-              event: 'GAME_START',
-              payload: {
-                roomId: roomID,
+              existingRoom.p1!.solved = false;
+              existingRoom.p2!.solved = false;
+
+              socket.join(roomID);
+              roomsBySocket[socket.id] = roomID;
+
+              socket.emit('message', {
+                event: 'GAME_START',
+                payload: {
+                  roomId: roomID,
+                  level: existingRoom.level,
+                  me: { name: name, slot: emptySlot },
+                  partner: {
+                    name: existingRoom![filledSlot]!.name,
+                    slot: filledSlot,
+                  },
+                  problems: currentSet.data.problems,
+                },
+              });
+
+              // Send GAME_START to waiting player
+              io.to(waitingPlayer.id).emit('message', {
+                event: 'GAME_START',
+                payload: {
+                  roomId: roomID,
+                  level: existingRoom.level,
+                  me: { name: waitingPlayer.name, slot: filledSlot },
+                  partner: { name: name, slot: emptySlot },
+                  problems: currentSet.data.problems,
+                },
+              });
+
+              setWaitingPlayer(null, '', '');
+            }
+          } else {
+            const player2name = name;
+            const player2ID = socket.id;
+            roomsBySocket[player2ID] = roomID;
+            roomsBySocket[waitingPlayer.id] = roomID;
+            const firstSet: LevelResult = getLevelData(1);
+
+            if (firstSet.status === 'SUCCESS') {
+              const answers = firstSet.data.answers;
+              activeRoom[roomID] = {
                 level: 1,
-                me: { name: player2name, slot: 'p2' },
-                partner: { name: waitingPlayer.name, slot: 'p1' },
-                problems: firstSet.data.problems,
-              },
-            });
+                p1: {
+                  id: waitingPlayer.id,
+                  name: waitingPlayer.name,
+                  solved: false,
+                  ans: answers.p1,
+                },
+                p2: {
+                  id: player2ID,
+                  name: player2name,
+                  solved: false,
+                  ans: answers.p2,
+                },
+                isHelpRequested: { p1: false, p2: false },
+                isHelpActive: { p1: false, p2: false },
+              };
 
-            io.to(waitingPlayer.id).emit('message', {
-              event: 'GAME_START',
-              payload: {
-                roomId: roomID,
-                level: 1,
-                me: { name: waitingPlayer.name, slot: 'p1' },
-                partner: { name: player2name, slot: 'p2' },
-                problems: firstSet.data.problems,
-              },
-            });
+              socket.join(roomID);
+              socket.emit('message', {
+                event: 'GAME_START',
+                payload: {
+                  roomId: roomID,
+                  level: 1,
+                  me: { name: player2name, slot: 'p2' },
+                  partner: { name: waitingPlayer.name, slot: 'p1' },
+                  problems: firstSet.data.problems,
+                },
+              });
 
-            setWaitingPlayer('', '', '');
+              io.to(waitingPlayer.id).emit('message', {
+                event: 'GAME_START',
+                payload: {
+                  roomId: roomID,
+                  level: 1,
+                  me: { name: waitingPlayer.name, slot: 'p1' },
+                  partner: { name: player2name, slot: 'p2' },
+                  problems: firstSet.data.problems,
+                },
+              });
+
+              setWaitingPlayer(null, '', '');
+            }
           }
         }
         break;
@@ -179,6 +238,31 @@ export const setupGameController = (io: Server, socket: Socket) => {
 
   // --- 4. CLEANUP ---
   socket.on('disconnect', () => {
-    // Handle player leaving
+    const roomId = roomsBySocket[socket.id];
+
+    if (roomId && activeRoom[roomId]) {
+      const room = activeRoom[roomId];
+      const disconnectedSlot = room!.p1!.id === socket.id ? 'p1' : 'p2';
+      const remainingSlot = disconnectedSlot === 'p1' ? 'p2' : 'p1';
+      const remainingPlayer = room[remainingSlot];
+      const leftPlayerName = room[disconnectedSlot]?.name;
+      room[disconnectedSlot] = {
+        id: '',
+        name: '',
+        solved: false,
+        ans: room[disconnectedSlot]!.ans,
+      };
+
+      io.to(remainingPlayer!.id).emit('message', {
+        event: 'PLAYER_LEFT',
+        payload: { partnerName: leftPlayerName },
+      });
+
+      setWaitingPlayer(remainingPlayer?.id!, remainingPlayer?.name!, roomId);
+      delete roomsBySocket[socket.id];
+    }
+    if (waitingPlayer?.id === socket.id) {
+      setWaitingPlayer(null, '', '');
+    }
   });
 };
