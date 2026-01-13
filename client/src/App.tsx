@@ -1,35 +1,86 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.tsx
+import { useEffect } from "react";
+import "./App.css";
+import LandingPage from "./views/LandingPage";
+import WaitingRoom from "./views/WaitingRoom";
+import GameView from "./views/GameView";
+import { useGame } from "./context/GameContext";
+import { GameProvider } from "./context/GameProvider";
+import { useSocket } from "./context/SocketContext";
+import type { GameStartPayload, MessageToFrontend } from "./types";
+import type { LandingMode } from "./views/LandingPage";
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppInner() {
+  const {
+    currentView,
+    setCurrentView,
+    userName,
+    setUserName,
+    setRoomId,
+    setMySlot,
+  } = useGame();
+  const { isConnected, send, subscribe } = useSocket();
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+  useEffect(() => {
+    return subscribe((event: MessageToFrontend) => {
+      switch (event.event) {
+        case "AWAITING_PLAYER": {
+          setCurrentView("WAITING");
+          break;
+        }
+
+        case "GAME_START": {
+          const payload = event.payload as GameStartPayload;
+          setRoomId(payload.roomId);
+          setMySlot(payload.me.slot);
+          setCurrentView("GAME");
+          break;
+        }
+
+        case "GAME_OVER": {
+          // TODO: show summary screen later; for now return to landing.
+          setCurrentView("LANDING");
+          break;
+        }
+
+        default: {
+          // Later: handle LIVE_FEEDBACK, NEXT_LEVEL, HELP_STATUS.
+        }
+      }
+    });
+  }, [setCurrentView, setRoomId, setMySlot, subscribe]);
+
+  const handleLandingSubmit = ({ name }: { name: string; mode: LandingMode }) => {
+    setUserName(name);
+    send({ command: "FIND_MATCH", payload: { name } });
+  };
+
+  const handleBackToLanding = () => {
+    setCurrentView("LANDING");
+  };
+
+  if (currentView === "LANDING") {
+    return <LandingPage onSubmit={handleLandingSubmit} initialName={userName} />;
+  }
+
+  if (currentView === "WAITING") {
+    return (
+      <WaitingRoom
+        name={userName}
+        mode="CREATE"
+        onBack={handleBackToLanding}
+        isConnected={isConnected}
+      />
+    );
+  }
+
+  return <GameView />;
 }
 
-export default App
+export default function App() {
+  return (
+    <GameProvider>
+      <AppInner />
+    </GameProvider>
+  );
+}
