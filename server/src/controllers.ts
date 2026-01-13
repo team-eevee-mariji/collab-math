@@ -23,15 +23,17 @@ export const setupGameController = (io: Server, socket: Socket) => {
           socket.join(id);
           socket.emit('message', { event: 'AWAITING_PLAYER', payload: null });
         } else if (waitingPlayer) {
-          const player2name = name;
-          const player2ID = socket.id;
           const roomID = waitingPlayer.roomId;
           const existingRoom = activeRoom[roomID];
+
+          console.log('exisitng room', existingRoom);
 
           //if a player left and want to put the new player into that room
           if (existingRoom) {
             const emptySlot = existingRoom!.p1!.id === '' ? 'p1' : 'p2';
+            console.log('empty slot', emptySlot);
             const filledSlot = emptySlot === 'p1' ? 'p2' : 'p1';
+            console.log('filled slot', filledSlot);
             const currentSet = getLevelData(existingRoom.level);
             if (currentSet.status === 'SUCCESS') {
               // Update room with new player
@@ -47,7 +49,6 @@ export const setupGameController = (io: Server, socket: Socket) => {
 
               socket.join(roomID);
               roomsBySocket[socket.id] = roomID;
-
               socket.emit('message', {
                 event: 'GAME_START',
                 payload: {
@@ -82,7 +83,7 @@ export const setupGameController = (io: Server, socket: Socket) => {
             roomsBySocket[player2ID] = roomID;
             roomsBySocket[waitingPlayer.id] = roomID;
             const firstSet: LevelResult = getLevelData(1);
-
+            console.log('currentSet status:', firstSet.status);
             if (firstSet.status === 'SUCCESS') {
               const answers = firstSet.data.answers;
               activeRoom[roomID] = {
@@ -102,6 +103,7 @@ export const setupGameController = (io: Server, socket: Socket) => {
                 isHelpRequested: { p1: false, p2: false },
                 isHelpActive: { p1: false, p2: false },
               };
+              console.log('active room', activeRoom);
 
               socket.join(roomID);
               socket.emit('message', {
@@ -261,6 +263,7 @@ export const setupGameController = (io: Server, socket: Socket) => {
       });
 
       setWaitingPlayer(remainingPlayer?.id!, remainingPlayer?.name!, roomId);
+      console.log('waiting player after disconnect', waitingPlayer);
       delete roomsBySocket[socket.id];
     }
     if (waitingPlayer?.id === socket.id) {
