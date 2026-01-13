@@ -71,7 +71,7 @@ export type LevelResult =
   | { status: 'COMPLETED' };
 
 export const getLevelData = (level: number): LevelResult => {
-  const pool = questions[level] || questions[1];
+  const pool = questions[level];
 
   if (!pool || pool.length === 0) {
     return { status: 'COMPLETED' };

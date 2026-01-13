@@ -30,7 +30,11 @@ export type MessageToBackend =
         slot: PlayerSlot; // ƒ+? The slot that NEEDS help (not the accepter)
       };
     }
-  ;
+  | {
+      command: 'CANVAS_UPDATE';
+      payload: { roomId: string; slot: PlayerSlot; canvasData: any[] };
+    };
+
 export type MessageToFrontend =
   | { event: 'AWAITING_PLAYER'; payload: null }
   | { event: 'GAME_START'; payload: GameStartPayload }
@@ -48,7 +52,11 @@ export type MessageToFrontend =
       event: 'GAME_OVER';
       payload: { message: string; stats: { totalLevels: number } };
     }
-  | { event: 'PLAYER_LEFT'; payload: { partnerName: string } };
+  | { event: 'PLAYER_LEFT'; payload: { partnerName: string } }
+  | {
+      event: 'CANVAS_UPDATE';
+      payload: { slot: PlayerSlot; canvasData: any[] };
+    };
 
 // --- 3. Backend Private State (Not for FE) ---
 

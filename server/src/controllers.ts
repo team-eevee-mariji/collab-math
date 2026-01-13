@@ -235,6 +235,17 @@ export const setupGameController = (io: Server, socket: Socket) => {
         }
         break;
       }
+      case 'CANVAS_UPDATE': {
+        const { roomId, slot, canvasData } = payload as {
+          roomId: string;
+          slot: string;
+          canvasData: any[];
+        };
+        io.to(roomId).emit('message', {
+          event: 'CANVAS_UPDATE',
+          payload: { slot, canvasData },
+        });
+      }
       default:
         console.log('Unknown command:', command);
     }
