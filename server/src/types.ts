@@ -47,7 +47,8 @@ export type MessageToFrontend =
   | {
       event: 'GAME_OVER';
       payload: { message: string; stats: { totalLevels: number } };
-    };
+    }
+  | { event: 'PLAYER_LEFT'; payload: { partnerName: string } };
 
 // --- 3. Backend Private State (Not for FE) ---
 
