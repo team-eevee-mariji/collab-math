@@ -1,4 +1,4 @@
-# IPC Protocol: Frontend ↔ Backend (Math Collab Game v2 - Optimized)
+# IPC Protocol: Frontend <-> Backend (Math Collab Game v2 - Optimized)
 
 **Core:** Async Message Passing over Socket.io. Server is source of truth.
 
@@ -76,7 +76,6 @@ Direction: Backend updates UI state.
 | `GAME_OVER`       | `{ message: string; stats: { totalLevels: number } }`          | `Displays final summary and level counts at the end of the session.` |
 
 ---
-
 ## 4. TypeScript Implementation
 
 ```typescript
@@ -110,14 +109,13 @@ export type MessageToBackend =
       command: 'ACCEPT_HELP';
       payload: {
         roomId: string;
-        slot: PlayerSlot; // ← The slot that NEEDS help (not the accepter)
+        slot: PlayerSlot; // The slot that needs help (not the accepter)
       };
     }
   | {
       command: 'CANVAS_UPDATE';
       payload: { roomId: string; slot: PlayerSlot; canvasData: any[] };
     };
-
 export type MessageToFrontend =
   | { event: 'AWAITING_PLAYER'; payload: null }
   | { event: 'GAME_START'; payload: GameStartPayload }
@@ -126,6 +124,7 @@ export type MessageToFrontend =
       payload: { slot: PlayerSlot; isCorrect: boolean; solverName: string };
     }
   | { event: 'NEXT_LEVEL'; payload: { level: number; problems: ProblemSet } }
+  | { event: 'HELP_REQUESTED'; payload: { targetSlot: PlayerSlot } }
   | {
       event: 'HELP_STATUS';
       payload: { isHelpActive: boolean; targetSlot: PlayerSlot };
@@ -150,3 +149,9 @@ export interface ActiveRoom {
   isHelpActive: { p1: boolean; p2: boolean };
 }
 ```
+
+
+
+
+
+

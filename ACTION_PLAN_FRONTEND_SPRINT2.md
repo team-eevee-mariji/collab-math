@@ -7,6 +7,7 @@
 [x] Build GameView layout with two player panels, prompts, work area, and inputs.
 [x] Show room id and a prominent level badge.
 [x] Wire SUBMIT_ANSWER for both slots and show feedback.
+[x] Replace scratch/notes area with Excalidraw canvas synced via CANVAS_UPDATE.
 
 ## Help Flow
 
