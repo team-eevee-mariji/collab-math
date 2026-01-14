@@ -67,4 +67,3 @@ export interface ActiveRoom {
   isHelpRequested: { p1: boolean; p2: boolean };
   isHelpActive: { p1: boolean; p2: boolean };
 }
-
