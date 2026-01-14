@@ -45,6 +45,10 @@ export default function GameView() {
 
         // If it's partner's update, load into their canvas
         if (slot !== mySlot) {
+          if (!canvasData?.length) {
+            partnerCanvasRef.current?.resetCanvas();
+            return;
+          }
           partnerCanvasRef.current?.loadPaths(canvasData);
         }
       }
@@ -318,6 +322,10 @@ function PlayerPanel(props: {
   const feedbackStyle = feedback?.isCorrect
     ? { ...styles.promptFeedback, ...styles.promptFeedbackCorrect }
     : { ...styles.promptFeedback, ...styles.promptFeedbackIncorrect };
+  const handleClearCanvas = () => {
+    if (!enabled) return;
+    canvasRef.current?.resetCanvas();
+  };
 
   return (
     <div style={panelStyle}>
@@ -353,7 +361,18 @@ function PlayerPanel(props: {
       </div>
 
       <div style={styles.workArea}>
-        <div style={styles.workTitle}>Show work</div>
+        <div style={styles.workHeader}>
+          <div className='work-title'>Show work here</div>
+          {enabled && (
+            <button
+              type='button'
+              style={styles.clearCanvasBtn}
+              onClick={handleClearCanvas}
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <div style={styles.workCanvas} className='work-canvas'>
           {/* Excalidraw (paused) */}
           {/* <Excalidraw
@@ -523,19 +542,25 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#fffdf7',
     position: 'relative',
   },
-  workTitle: {
-    fontSize: 11,
-    fontWeight: 800,
-    opacity: 0.8,
-    position: 'absolute',
-    top: 6,
-    left: 8,
-    padding: '2px 8px',
-    borderRadius: 999,
-    border: '1px solid #111',
-    pointerEvents: 'none',
-    zIndex: 1,
+  workHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
+  // workTitle: {
+  //   fontSize: 11,
+  //   fontWeight: 800,
+  //   opacity: 0.8,
+  //   position: 'absolute',
+  //   top: 6,
+  //   left: 8,
+  //   padding: '2px 8px',
+  //   borderRadius: 999,
+  //   border: '1px solid #111',
+  //   pointerEvents: 'none',
+  //   zIndex: 1,
+  // },
   workCanvas: {
     flex: 1,
     minHeight: 280,
@@ -543,6 +568,17 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     background: '#fff',
     cursor: 'crosshair',
+  },
+  clearCanvasBtn: {
+    borderRadius: 999,
+    border: '2px solid #111',
+    padding: '4px 10px',
+    fontWeight: 800,
+    boxShadow: '2px 2px 0 #111',
+    background: '#fff',
+    color: '#111',
+    cursor: 'pointer',
+    margin: 0,
   },
   answerRow: { display: 'flex', gap: 10 },
   input: {
@@ -671,7 +707,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     fontWeight: 800,
     boxShadow: '3px 3px 0 #111',
-    background: '#dcfce7',
+    background: '#16a34a',
   },
   gameOverSecondary: {
     borderRadius: 12,
@@ -679,7 +715,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     fontWeight: 800,
     boxShadow: '3px 3px 0 #111',
-    background: '#fff',
+    background: '#ef4444',
   },
   footer: {
     display: 'flex',
