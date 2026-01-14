@@ -15,15 +15,6 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
   margin: 0;
   display: flex;
@@ -41,7 +32,7 @@ button {
   border-radius: 2rem;
   padding: 10px;
   margin: 3px;
-  background-color: #5818d8;
+  background-color: #ef4444;
   color: white;
 }
 
@@ -55,23 +46,4 @@ button {
   margin: 0 auto;
   border-radius: 2rem;
   margin-bottom: 5px;
-}
-.work-title {
-  background-color: #fffdf7;
-}
-.work-title {
-  size: 11;
-  font-weight: 800;
-  opacity: 0.8;
-  position: 'absolute';
-  margin-top: 6;
-  margin-left: 8;
-  padding: 2px 8px;
-  border-radius: 1rem;
-  border: 1px solid #111;
-  pointer-events: 'none';
-  z-index: 1;
-}
-.work-title:hover {
-  background-color: #e6aa68;
 }

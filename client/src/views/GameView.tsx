@@ -353,7 +353,7 @@ function PlayerPanel(props: {
       </div>
 
       <div style={styles.workArea}>
-        <div className='work-title'>Use canvas</div>
+        <div style={styles.workTitle}>Show work</div>
         <div style={styles.workCanvas} className='work-canvas'>
           {/* Excalidraw (paused) */}
           {/* <Excalidraw
@@ -523,25 +523,26 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#fffdf7',
     position: 'relative',
   },
-  // workTitle: {
-  //   fontSize: 11,
-  //   fontWeight: 800,
-  //   opacity: 0.8,
-  //   position: 'absolute',
-  //   top: 6,
-  //   left: 8,
-  //   padding: '2px 8px',
-  //   borderRadius: 999,
-  //   border: '1px solid #111',
-  //   pointerEvents: 'none',
-  //   zIndex: 1,
-  // },
+  workTitle: {
+    fontSize: 11,
+    fontWeight: 800,
+    opacity: 0.8,
+    position: 'absolute',
+    top: 6,
+    left: 8,
+    padding: '2px 8px',
+    borderRadius: 999,
+    border: '1px solid #111',
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
   workCanvas: {
     flex: 1,
     minHeight: 280,
     borderRadius: 10,
     overflow: 'hidden',
     background: '#fff',
+    cursor: 'crosshair',
   },
   answerRow: { display: 'flex', gap: 10 },
   input: {
