@@ -567,6 +567,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     overflow: 'hidden',
     background: '#fff',
+    cursor: 'crosshair',
   },
   clearCanvasBtn: {
     borderRadius: 999,
@@ -706,7 +707,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     fontWeight: 800,
     boxShadow: '3px 3px 0 #111',
-    background: '#dcfce7',
+    background: '#16a34a',
   },
   gameOverSecondary: {
     borderRadius: 12,
@@ -714,7 +715,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     fontWeight: 800,
     boxShadow: '3px 3px 0 #111',
-    background: '#fff',
+    background: '#ef4444',
   },
   footer: {
     display: 'flex',
