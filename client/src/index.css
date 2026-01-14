@@ -85,3 +85,7 @@ button:focus-visible {
     box-shadow: 3px 3px 0 #111;
   }
 }
+
+.work-canvas .excalidraw .App-menu_bottom {
+  display: none;
+}

@@ -21,5 +21,6 @@
   "homepage": "https://github.com/team-eevee-mariji/collab-math#readme",
   "devDependencies": {
     "concurrently": "^9.2.1"
-  }
+  },
+  "dependencies": {}
 }

@@ -1,7 +1,56 @@
-import React, { useState } from "react";
+import React, {  useEffect, useRef, useState } from "react";
+// import { Excalidraw } from "@excalidraw/excalidraw";
+// import "@excalidraw/excalidraw/index.css";
+// import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import { ReactSketchCanvas } from "react-sketch-canvas";
+import type { ReactSketchCanvasRef } from "react-sketch-canvas";
 import { useGame } from "../context/GameContext";
 import { useSocket } from "../context/SocketContext";
-import type { PlayerSlot } from "../types";
+import type { CanvasData, PlayerSlot } from "../types";
+
+// const canvasUiOptions = {
+//   canvasActions: {
+//     export: false,
+//     loadScene: false,
+//     saveToActiveFile: false,
+//     saveAsImage: false,
+//     toggleTheme: false,
+//     changeViewBackgroundColor: false,
+//   },
+//   tools: {
+//     image: false,
+//   },
+// };
+
+const emptyCanvasData: CanvasData = [];
+
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const isCanvasPoint = (value: unknown): value is { x: number; y: number } => {
+  if (!value || typeof value !== "object") return false;
+  const point = value as { x?: unknown; y?: unknown };
+  return isFiniteNumber(point.x) && isFiniteNumber(point.y);
+};
+
+const isCanvasPath = (value: unknown): value is CanvasData[number] => {
+  if (!value || typeof value !== "object") return false;
+  const path = value as Partial<CanvasData[number]>;
+  return (
+    Array.isArray(path.paths) &&
+    path.paths.length > 0 &&
+    path.paths.every(isCanvasPoint) &&
+    isFiniteNumber(path.strokeWidth) &&
+    typeof path.strokeColor === "string" &&
+    typeof path.drawMode === "boolean"
+  );
+};
+
+const normalizeCanvasData = (value: unknown): CanvasData => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isCanvasPath);
+};
 
 export default function GameView() {
   const {
@@ -19,12 +68,85 @@ export default function GameView() {
     reset,
   } = useGame();
 
-  const { send, disconnect } = useSocket();
+  const { send, disconnect, subscribe } = useSocket();
 
   const [p1Answer, setP1Answer] = useState("");
   const [p2Answer, setP2Answer] = useState("");
 
+  const canvasRef = useRef<Record<PlayerSlot, ReactSketchCanvasRef | null>>({
+    p1: null,
+    p2: null,
+  });
+  const canvasDataRef = useRef<Record<PlayerSlot, CanvasData>>({
+    p1: emptyCanvasData,
+    p2: emptyCanvasData,
+  });
+  const applyingRemoteRef = useRef<Record<PlayerSlot, boolean>>({ p1: false, p2: false });
+  const pendingSendRef = useRef<Record<PlayerSlot, number | null>>({ p1: null, p2: null });
+
+  // const scheduleCanvasSend = useCallback(
+  //   (slot: PlayerSlot, elements: CanvasData) => {
+  //     if (!roomId) return;
+  //     const pending = pendingSendRef.current[slot];
+  //     if (pending !== null) window.clearTimeout(pending);
+  //     pendingSendRef.current[slot] = window.setTimeout(() => {
+  //       send({
+  //         command: "CANVAS_UPDATE",
+  //         payload: { roomId, slot, canvasData: elements },
+  //       });
+  //     }, 120);
+  //   },
+  //   [roomId, send]
+  // );
+
+  // const handleCanvasChange = useCallback(
+  //   (slot: PlayerSlot, elements: CanvasData) => {
+  //     if (applyingRemoteRef.current[slot]) return;
+  //     const safeElements = normalizeCanvasData(elements);
+  //     canvasDataRef.current[slot] = safeElements;
+  //     scheduleCanvasSend(slot, safeElements);
+  //   },
+  //   [scheduleCanvasSend]
+  // );
+
+  const handleCanvasRef = useCallback((slot: PlayerSlot, api: ReactSketchCanvasRef | null) => {
+    canvasRef.current[slot] = api;
+    if (!api) return;
+    const paths = normalizeCanvasData(canvasDataRef.current[slot]);
+    canvasDataRef.current[slot] = paths;
+    if (!paths.length) return;
+    applyingRemoteRef.current[slot] = true;
+    void Promise.resolve(api.loadPaths(paths)).finally(() => {
+      applyingRemoteRef.current[slot] = false;
+    });
+  }, []);
+
   const headerSymbols = ["+", "-", "x", "/"];
+
+  useEffect(() => {
+    return subscribe((event) => {
+      if (event.event !== "CANVAS_UPDATE") return;
+      const { slot, canvasData } = event.payload;
+      const safePaths = normalizeCanvasData(canvasData);
+      canvasDataRef.current[slot] = safePaths;
+      const api = canvasRef.current[slot];
+      if (!api || !safePaths.length) return;
+      applyingRemoteRef.current[slot] = true;
+      void Promise.resolve(api.loadPaths(safePaths)).finally(() => {
+        applyingRemoteRef.current[slot] = false;
+      });
+    });
+  }, [subscribe]);
+
+  useEffect(() => {
+    const pendingRefs = pendingSendRef.current;
+    return () => {
+      (["p1", "p2"] as PlayerSlot[]).forEach((slot) => {
+        const pending = pendingRefs[slot];
+        if (pending !== null) window.clearTimeout(pending);
+      });
+    };
+  }, []);
 
   // avoid crash during brief state transitions
   if (!roomId || !me || !partner || !problems || !mySlot) {
@@ -117,6 +239,7 @@ const helpBannerText = isHelpActive
         {/* Two columns */}
         <div style={styles.body}>
 <PlayerPanel
+  slot="p1"
   label="Player 1"
   name={p1Name}
   prompt={problems.p1Prompt}
@@ -124,6 +247,8 @@ const helpBannerText = isHelpActive
   answer={p1Answer}
   setAnswer={setP1Answer}
   onSubmit={() => submit("p1")}
+  // onCanvasChange={handleCanvasChange}
+  // onCanvasRef={handleCanvasRef}
   feedback={feedback?.slot === "p1" ? feedback : null}
   highlight={p1NeedsHelp}
   showAccept={showAcceptP1}
@@ -133,6 +258,7 @@ const helpBannerText = isHelpActive
 <div style={styles.divider} />
 
 <PlayerPanel
+  slot="p2"
   label="Player 2"
   name={p2Name}
   prompt={problems.p2Prompt}
@@ -140,6 +266,8 @@ const helpBannerText = isHelpActive
   answer={p2Answer}
   setAnswer={setP2Answer}
   onSubmit={() => submit("p2")}
+  // onCanvasChange={handleCanvasChange}
+  onCanvasRef={handleCanvasRef}
   feedback={feedback?.slot === "p2" ? feedback : null}
   highlight={p2NeedsHelp}
   showAccept={showAcceptP2}
@@ -201,6 +329,7 @@ const helpBannerText = isHelpActive
 }
 
 function PlayerPanel(props: {
+  slot: PlayerSlot;
   label: string;
   name: string;
   prompt: string;
@@ -208,12 +337,15 @@ function PlayerPanel(props: {
   answer: string;
   setAnswer: (v: string) => void;
   onSubmit: () => void;
+  // onCanvasChange: (slot: PlayerSlot, elements: CanvasData) => void;
+  // onCanvasRef: (slot: PlayerSlot, api: ReactSketchCanvasRef | null) => void;
   feedback: { message: string; isCorrect: boolean } | null;
   highlight: boolean;
   showAccept: boolean;
   onAccept: () => void;
 }) {
   const {
+    slot,
     label,
     name,
     prompt,
@@ -221,12 +353,17 @@ function PlayerPanel(props: {
     answer,
     setAnswer,
     onSubmit,
+    // onCanvasChange,
+    onCanvasRef,
     feedback,
     highlight,
     showAccept,
     onAccept,
   } =
     props;
+    const {send} = useSocket();
+    const {roomId} = useGame();
+
   const panelStyle = highlight ? { ...styles.panel, ...styles.panelAlert } : styles.panel;
   const feedbackStyle = feedback?.isCorrect
     ? { ...styles.promptFeedback, ...styles.promptFeedbackCorrect }
@@ -266,8 +403,37 @@ function PlayerPanel(props: {
       </div>
 
       <div style={styles.workArea}>
-        <div style={styles.workTitle}>Work</div>
-        <div style={styles.workHint}>Scratch / notes area</div>
+        <div style={styles.workTitle}>Show work</div>
+        <div style={styles.workCanvas} className="work-canvas">
+          {/* Excalidraw (paused) */}
+          {/* <Excalidraw
+            excalidrawAPI={(api: ExcalidrawImperativeAPI) => onCanvasRef(slot, api)}
+            initialData={{ elements: emptyCanvasData }}
+            onChange={(elements: CanvasData) => {
+              if (!enabled) return;
+              onCanvasChange(slot, elements);
+            }}
+            viewModeEnabled={!enabled}
+            UIOptions={canvasUiOptions}
+          /> */}
+          <ReactSketchCanvas
+            ref={(api: ReactSketchCanvasRef | null) => onCanvasRef(slot, api)}
+            onChange={(paths: CanvasData) => {
+              if (!roomId) return;
+              send({command: 'CANVAS_UPDATE', payload: {roomId: roomId, slot, canvasData: paths }})
+              // if (!enabled) return;
+              // onCanvasChange(slot, paths);
+            }}
+            strokeWidth={3}
+            strokeColor="#111"
+            canvasColor="#fff"
+            style={{
+              width: "100%",
+              height: "100%",
+              pointerEvents: enabled ? "auto" : "none",
+            }}
+          />
+        </div>
       </div>
 
       <div style={styles.answerRow}>
@@ -357,7 +523,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
     paddingTop: 14,
     paddingBottom: 14,
-    minHeight: 420,
+    minHeight: 540,
   },
   divider: {
     width: "100%",
@@ -368,8 +534,8 @@ const styles: Record<string, React.CSSProperties> = {
   panel: {
     display: "flex",
     flexDirection: "column",
-    gap: 12,
-    padding: 12,
+    gap: 10,
+    padding: 10,
     borderRadius: 18,
     border: "2px solid #111",
     boxShadow: "4px 4px 0 #111",
@@ -381,7 +547,7 @@ const styles: Record<string, React.CSSProperties> = {
   promptBox: {
     border: "2px solid #111",
     borderRadius: 14,
-    padding: "8px 12px",
+    padding: "6px 10px",
     background: "#fafafa",
   },
   promptRow: {
@@ -396,11 +562,35 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     border: "2px dashed #111",
     borderRadius: 14,
-    padding: 12,
-    minHeight: 140,
+    padding: 6,
+    minHeight: 320,
+    display: "flex",
+    flexDirection: "column",
+    gap: 0,
+    background: "#fffdf7",
+    position: "relative",
   },
-  workTitle: { fontSize: 12, fontWeight: 800, opacity: 0.7 },
-  workHint: { marginTop: 8, opacity: 0.6 },
+  workTitle: {
+    fontSize: 11,
+    fontWeight: 800,
+    opacity: 0.8,
+    position: "absolute",
+    top: 6,
+    left: 8,
+    padding: "2px 8px",
+    borderRadius: 999,
+    border: "1px solid #111",
+    background: "#fffdf7",
+    pointerEvents: "none",
+    zIndex: 1,
+  },
+  workCanvas: {
+    flex: 1,
+    minHeight: 280,
+    borderRadius: 10,
+    overflow: "hidden",
+    background: "#fff",
+  },
   answerRow: { display: "flex", gap: 10 },
   input: {
     flex: 1,
