@@ -45,6 +45,10 @@ export default function GameView() {
 
         // If it's partner's update, load into their canvas
         if (slot !== mySlot) {
+          if (!canvasData?.length) {
+            partnerCanvasRef.current?.resetCanvas();
+            return;
+          }
           partnerCanvasRef.current?.loadPaths(canvasData);
         }
       }
@@ -318,6 +322,10 @@ function PlayerPanel(props: {
   const feedbackStyle = feedback?.isCorrect
     ? { ...styles.promptFeedback, ...styles.promptFeedbackCorrect }
     : { ...styles.promptFeedback, ...styles.promptFeedbackIncorrect };
+  const handleClearCanvas = () => {
+    if (!enabled) return;
+    canvasRef.current?.resetCanvas();
+  };
 
   return (
     <div style={panelStyle}>
@@ -353,7 +361,18 @@ function PlayerPanel(props: {
       </div>
 
       <div style={styles.workArea}>
-        <div className='work-title'>Use canvas</div>
+        <div style={styles.workHeader}>
+          <div className='work-title'>Show work here</div>
+          {enabled && (
+            <button
+              type='button'
+              style={styles.clearCanvasBtn}
+              onClick={handleClearCanvas}
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <div style={styles.workCanvas} className='work-canvas'>
           {/* Excalidraw (paused) */}
           {/* <Excalidraw
@@ -523,6 +542,12 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#fffdf7',
     position: 'relative',
   },
+  workHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   // workTitle: {
   //   fontSize: 11,
   //   fontWeight: 800,
@@ -542,6 +567,17 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     overflow: 'hidden',
     background: '#fff',
+  },
+  clearCanvasBtn: {
+    borderRadius: 999,
+    border: '2px solid #111',
+    padding: '4px 10px',
+    fontWeight: 800,
+    boxShadow: '2px 2px 0 #111',
+    background: '#fff',
+    color: '#111',
+    cursor: 'pointer',
+    margin: 0,
   },
   answerRow: { display: 'flex', gap: 10 },
   input: {
