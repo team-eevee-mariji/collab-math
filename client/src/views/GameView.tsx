@@ -8,49 +8,6 @@ import { useGame } from '../context/GameContext';
 import { useSocket } from '../context/SocketContext';
 import type { CanvasData, PlayerSlot } from '../types';
 
-// const canvasUiOptions = {
-//   canvasActions: {
-//     export: false,
-//     loadScene: false,
-//     saveToActiveFile: false,
-//     saveAsImage: false,
-//     toggleTheme: false,
-//     changeViewBackgroundColor: false,
-//   },
-//   tools: {
-//     image: false,
-//   },
-// };
-
-// const emptyCanvasData: CanvasData = [];
-
-// const isFiniteNumber = (value: unknown): value is number =>
-//   typeof value === "number" && Number.isFinite(value);
-
-// const isCanvasPoint = (value: unknown): value is { x: number; y: number } => {
-//   if (!value || typeof value !== "object") return false;
-//   const point = value as { x?: unknown; y?: unknown };
-//   return isFiniteNumber(point.x) && isFiniteNumber(point.y);
-// };
-
-// const isCanvasPath = (value: unknown): value is CanvasData[number] => {
-//   if (!value || typeof value !== "object") return false;
-//   const path = value as Partial<CanvasData[number]>;
-//   return (
-//     Array.isArray(path.paths) &&
-//     path.paths.length > 0 &&
-//     path.paths.every(isCanvasPoint) &&
-//     isFiniteNumber(path.strokeWidth) &&
-//     typeof path.strokeColor === "string" &&
-//     typeof path.drawMode === "boolean"
-//   );
-// };
-
-// const normalizeCanvasData = (value: unknown): CanvasData => {
-//   if (!Array.isArray(value)) return [];
-//   return value.filter(isCanvasPath);
-// };
-
 export default function GameView() {
   const {
     roomId,
@@ -72,77 +29,14 @@ export default function GameView() {
   const [p1Answer, setP1Answer] = useState('');
   const [p2Answer, setP2Answer] = useState('');
 
-  // const canvasRef = useRef<Record<PlayerSlot, ReactSketchCanvasRef | null>>({
-  //   p1: null,
-  //   p2: null,
-  // });
-  // const canvasDataRef = useRef<Record<PlayerSlot, CanvasData>>({
-  //   p1: emptyCanvasData,
-  //   p2: emptyCanvasData,
-  // });
-
   const myCanvasRef = useRef<ReactSketchCanvasRef | null>(null);
   const partnerCanvasRef = useRef<ReactSketchCanvasRef | null>(null);
-
-  // const applyingRemoteRef = useRef<Record<PlayerSlot, boolean>>({ p1: false, p2: false });
   const pendingSendRef = useRef<Record<PlayerSlot, number | null>>({
     p1: null,
     p2: null,
   });
 
-  // const scheduleCanvasSend = useCallback(
-  //   (slot: PlayerSlot, elements: CanvasData) => {
-  //     if (!roomId) return;
-  //     const pending = pendingSendRef.current[slot];
-  //     if (pending !== null) window.clearTimeout(pending);
-  //     pendingSendRef.current[slot] = window.setTimeout(() => {
-  //       send({
-  //         command: "CANVAS_UPDATE",
-  //         payload: { roomId, slot, canvasData: elements },
-  //       });
-  //     }, 120);
-  //   },
-  //   [roomId, send]
-  // );
-
-  // const handleCanvasChange = useCallback(
-  //   (slot: PlayerSlot, elements: CanvasData) => {
-  //     if (applyingRemoteRef.current[slot]) return;
-  //     const safeElements = normalizeCanvasData(elements);
-  //     canvasDataRef.current[slot] = safeElements;
-  //     scheduleCanvasSend(slot, safeElements);
-  //   },
-  //   [scheduleCanvasSend]
-  // );
-
-  // const handleCanvasRef = useCallback((slot: PlayerSlot, api: ReactSketchCanvasRef | null) => {
-  //   canvasRef.current[slot] = api;
-  //   if (!api) return;
-  //   const paths = normalizeCanvasData(canvasDataRef.current[slot]);
-  //   canvasDataRef.current[slot] = paths;
-  //   if (!paths.length) return;
-  //   applyingRemoteRef.current[slot] = true;
-  //   void Promise.resolve(api.loadPaths(paths)).finally(() => {
-  //     applyingRemoteRef.current[slot] = false;
-  //   });
-  // }, []);
-
   const headerSymbols = ['+', '-', 'x', '/'];
-
-  // useEffect(() => {
-  //   return subscribe((event) => {
-  //     if (event.event !== "CANVAS_UPDATE") return;
-  //     const { slot, canvasData } = event.payload;
-  //     const safePaths = normalizeCanvasData(canvasData);
-  //     canvasDataRef.current[slot] = safePaths;
-  //     const api = canvasRef.current[slot];
-  //     if (!api || !safePaths.length) return;
-  //     applyingRemoteRef.current[slot] = true;
-  //     void Promise.resolve(api.loadPaths(safePaths)).finally(() => {
-  //       applyingRemoteRef.current[slot] = false;
-  //     });
-  //   });
-  // }, [subscribe]);
 
   useEffect(() => {
     return subscribe((event) => {
@@ -167,7 +61,6 @@ export default function GameView() {
     };
   }, []);
 
-  // avoid crash during brief state transitions
   if (!roomId || !me || !partner || !problems || !mySlot) {
     return <div style={{ padding: 24 }}>Loading game room...</div>;
   }
@@ -397,8 +290,6 @@ function PlayerPanel(props: {
   onSubmit: () => void;
   canvasRef: React.RefObject<ReactSketchCanvasRef | null>;
   onCanvasChange?: (paths: CanvasData) => void;
-  // onCanvasChange: (slot: PlayerSlot, elements: CanvasData) => void;
-  // onCanvasRef: (slot: PlayerSlot, api: ReactSketchCanvasRef | null) => void;
   feedback: { message: string; isCorrect: boolean } | null;
   highlight: boolean;
   showAccept: boolean;
@@ -462,7 +353,7 @@ function PlayerPanel(props: {
       </div>
 
       <div style={styles.workArea}>
-        <div style={styles.workTitle}>Show work</div>
+        <div className='work-title'>Use canvas</div>
         <div style={styles.workCanvas} className='work-canvas'>
           {/* Excalidraw (paused) */}
           {/* <Excalidraw
@@ -568,7 +459,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 12px',
     textAlign: 'center',
     boxShadow: '3px 3px 0 #111',
-    background: '#fff5cc',
+    background: '#ECE4B7',
     minWidth: 70,
     animation: 'mcgLevelPulse 600ms ease',
   },
@@ -614,7 +505,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   promptText: {
-    fontSize: 15,
+    fontSize: 30,
     fontWeight: 700,
     justifySelf: 'center',
     gridColumn: 2,
@@ -632,20 +523,19 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#fffdf7',
     position: 'relative',
   },
-  workTitle: {
-    fontSize: 11,
-    fontWeight: 800,
-    opacity: 0.8,
-    position: 'absolute',
-    top: 6,
-    left: 8,
-    padding: '2px 8px',
-    borderRadius: 999,
-    border: '1px solid #111',
-    background: '#fffdf7',
-    pointerEvents: 'none',
-    zIndex: 1,
-  },
+  // workTitle: {
+  //   fontSize: 11,
+  //   fontWeight: 800,
+  //   opacity: 0.8,
+  //   position: 'absolute',
+  //   top: 6,
+  //   left: 8,
+  //   padding: '2px 8px',
+  //   borderRadius: 999,
+  //   border: '1px solid #111',
+  //   pointerEvents: 'none',
+  //   zIndex: 1,
+  // },
   workCanvas: {
     flex: 1,
     minHeight: 280,
@@ -668,7 +558,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     fontWeight: 800,
     boxShadow: '3px 3px 0 #111',
-    background: '#fff',
+    background: '#7FB069',
+    color: '#fff',
   },
   promptFeedback: {
     borderRadius: 999,
@@ -809,7 +700,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     fontWeight: 800,
     boxShadow: '3px 3px 0 #111',
-    background: '#fff',
+    background: '#D36135',
   },
   leaveBtn: {
     borderRadius: 999,
@@ -817,7 +708,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     fontWeight: 800,
     boxShadow: '3px 3px 0 #111',
-    background: '#fff',
+    background: '#ECE4B7',
   },
   acceptBtn: {
     borderRadius: 999,
@@ -825,7 +716,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '4px 10px',
     fontWeight: 800,
     boxShadow: '2px 2px 0 #111',
-    background: '#ffedd5',
+    background: '#E6AA68',
     fontSize: 12,
   },
 };
